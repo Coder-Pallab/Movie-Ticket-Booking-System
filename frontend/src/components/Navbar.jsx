@@ -90,7 +90,7 @@ const Navbar = () => {
     >
       {/* Logo */}
       <Link to='/' onClick={() => scrollTo(0, 0)} className='max-md:flex-1 transition-opacity duration-200 hover:opacity-80'>
-        <img src={assets.logo} alt="Logo" className='w-36 h-auto' />
+        <img src={assets.logo} alt="Logo" className='w-40 h-auto' />
       </Link>
 
       {/* Mobile Drawer */}
