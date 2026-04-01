@@ -11,7 +11,7 @@ const Movies = () => {
       <BlurCircle top='150px' left='0px'/>
       <BlurCircle bottom='50px' right='50px'/>
       <h1 className='text-xl text-primary font-medium my-4'>Now Showing</h1>
-      <div className='flex flex-wrap max-sm:justify-center gap-8'>
+      <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-items-center'>
         {dummyShowsData.map((movie)=> (
           <MovieCard movie={movie} key={movie._id}/>
         ))}
