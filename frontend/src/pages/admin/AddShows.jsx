@@ -18,6 +18,34 @@ const AddShows = () => {
     setNowPlayingMovies(dummyShowsData)
   }
 
+  const handleDateTimeAdd = async () => {
+    if(!dateTimeInput) return;
+    const [date, time] = dateTimeInput.split("T");
+    if(!date || !time) return;
+
+    setDateTimeSelection((prev) => {
+      const times = prev[date] || [];
+      if(!times.includes(time)) {
+        return {...prev, [date]: [...times, time]};
+      }
+      return prev;
+    })
+  }
+
+  const handleRemoveTime = (date, time) => {
+    setDateTimeSelection((prev) => {
+      const filteredTimes = prev[date].filter((t) => t !== time);
+      if(filteredTimes.length === 0) {
+        const { [date]: _, ...rest } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [date]: filteredTimes,
+      };
+    });
+  };
+
   useEffect(()=> {
     fetchNowPlayingMovies()
   }, [])
@@ -49,6 +77,24 @@ const AddShows = () => {
                 </div>
               ))}
           </div>
+      </div>
+
+      {/* Show Price Input */}
+      <div className='mt-8'>
+              <label className='block text-sm font-medium mb-2'>Show Price</label>
+              <div className='inline-flex items-center gap-2 border border-gray-600 px-3 py-2 rounded-md'>
+                <p className='text-gray-400 text-sm'>{currency}</p>
+                <input min={0} type='number' value={showPrice} onChange={(e) => setShowPrice(e.target.value)} placeholder='Enter show price' className='outline-none'/>
+              </div>
+      </div>
+
+      {/* Date and Time Selection */}
+      <div className='mt-6'>
+              <label className='block text-sm font-medium mb-2'>Select Date and Time</label>
+              <div className='inline-flex gap-5 border border-gray-600 p-1 pl-3 rounded-lg'>
+                <input type='datetime-local' value={dateTimeInput} onChange={(e) => setDateTimeInput(e.target.value)} className='outline-none rounded-md'/>
+                <button onClick={handleDateTimeAdd} className='bg-primary/80 text-white px-3 py-2 text-sm rounded-lg hover:bg-primary cursor-pointer'>Add Time</button>
+              </div>
       </div>
     </>
   ) : <Loading/>
