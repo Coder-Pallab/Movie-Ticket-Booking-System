@@ -10,6 +10,7 @@ import { inngest, functions } from "./inngest/index.js"
 import showRouter from './routes/showRoutes.js';
 import bookingRouter from './routes/bookingRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
+import userRouter from './routes/userRoutes.js';
 
 // Setting the DNS server
 dns.setServers(['1.1.1.1', '8.8.8.8'])
@@ -32,6 +33,7 @@ app.use('/api/inngest', serve({ client: inngest, functions }));
 app.use('/api/show', showRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/user', userRouter);
 
 // Running the server
 app.listen(port, () => console.log(`Server is up and running on port http://localhost:${port}`));
