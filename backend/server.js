@@ -8,6 +8,7 @@ import { clerkMiddleware } from '@clerk/express'
 import { serve } from "inngest/express";
 import { inngest, functions } from "./inngest/index.js"
 import showRouter from './routes/showRoutes.js';
+import bookingRouter from './routes/bookingRoutes.js';
 
 // Setting the DNS server
 dns.setServers(['1.1.1.1', '8.8.8.8'])
@@ -28,6 +29,7 @@ app.use(clerkMiddleware())
 app.get('/', (req, res) => res.send("Server is up and running!"));
 app.use('/api/inngest', serve({ client: inngest, functions }));
 app.use('/api/show', showRouter);
+app.use('/api/booking', bookingRouter);
 
 // Running the server
 app.listen(port, () => console.log(`Server is up and running on port http://localhost:${port}`));
