@@ -2,10 +2,12 @@ import { Star, Clock, Ticket } from 'lucide-react';
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import timeFormat from '../lib/timeFormat';
+import { useAppContext } from '../context/AppContext';
 
 const MovieCard = ({ movie }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const { image_base_url } = useAppContext();
 
   const goToMovie = () => {
     navigate(`/movies/${movie._id}`);
@@ -32,7 +34,7 @@ const MovieCard = ({ movie }) => {
       {/* Poster */}
       <div className="relative overflow-hidden aspect-2/3">
         <img
-          src={movie.backdrop_path}
+          src={image_base_url + movie.backdrop_path}
           alt={movie.title}
           className="w-full h-full object-cover transition-all duration-500"
           style={{

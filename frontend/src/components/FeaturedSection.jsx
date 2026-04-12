@@ -2,8 +2,8 @@ import { ArrowRight } from 'lucide-react'
 import React, { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BlurCircle from './BlurCircle';
-import { dummyShowsData } from '../assets/assets';
 import MovieCard from './MovieCard';
+import { useAppContext } from '../context/AppContext';
 
 // Thin numbered rule label
 const SectionLabel = ({ number, children }) => (
@@ -63,6 +63,8 @@ const AnimatedCard = ({ children, index }) => {
 };
 
 const FeaturedSection = () => {
+
+  const { shows } = useAppContext();
   const navigate = useNavigate();
 
   return (
@@ -144,7 +146,7 @@ const FeaturedSection = () => {
 
       {/* Cards grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 max-sm:grid-cols-1 justify-items-center">
-        {dummyShowsData.slice(0, 4).map((show, i) => (
+        {shows.slice(0, 4).map((show, i) => (
           <AnimatedCard key={show._id} index={i}>
             {/* Card wrapper with hover lift */}
             <div
