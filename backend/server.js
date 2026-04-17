@@ -11,6 +11,7 @@ import showRouter from './routes/showRoutes.js';
 import bookingRouter from './routes/bookingRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import userRouter from './routes/userRoutes.js';
+import { stripeWebhooks } from './controllers/stripeWebhook.js';
 
 // Setting the DNS server
 dns.setServers(['1.1.1.1', '8.8.8.8'])
@@ -21,6 +22,9 @@ const port = 3000;
 
 // Connecting MongoDB
 await connectDB();
+
+// Stripe Webhook Route
+app.use('/api/stripe', express.raw({type: 'application/json'}), stripeWebhooks)
 
 // Defining Middlewares
 app.use(express.json());
