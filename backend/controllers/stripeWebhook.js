@@ -50,6 +50,12 @@ export const stripeWebhooks = async (req, res) => {
                 await showData.save();
 
                 console.log("✅ Payment confirmed, seats locked, booking updated");
+
+                // Send confirmation email
+                await inngest.send({
+                    name: "app/show.booked",
+                    data: {bookingId}
+                })
                 break;
             }
 

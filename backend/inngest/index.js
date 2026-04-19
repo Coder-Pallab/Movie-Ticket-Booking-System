@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
+import sendEmail from "../configs/nodeMailer.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "movie-ticket-booking" });
@@ -82,5 +83,52 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
     }
 )
 
+// Inngest function to send email when user books a show
+const sendBookingConfirmationEmail = inngest.createFunction(
+    {
+        id: 'send-booking-confirmation-email',
+        triggers: [{ event: "app/show.booked" }],
+    },
+    async ({ event, step }) => {
+        const { bookingId } = event.data;
+
+        const booking = await Booking.findById(bookingId).populate({
+            path: 'show',
+            populate: { path: 'movie', model: 'Movie'}
+        }).populate('user');
+
+        await sendEmail({
+            to: booking.user.email,
+            subject: `Payment Confirmation "${booking.show.movie.title}" booked!`,
+            body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
+                
+                <div style="background-color: #6c3baa; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0;">🎬 CineMine</h1>
+                </div>
+
+                <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 10px 10px;">
+                    <h2 style="color: #333;">Hi ${booking.user.name},</h2>
+                    <p style="color: #555;">Your booking is confirmed! Here are your details:</p>
+
+                    <div style="background-color: #f3eeff; border-left: 4px solid #6c3baa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>🎥 Movie:</strong> ${booking.show.movie.title}</p>
+                        <p style="margin: 5px 0;"><strong>📅 Show Time:</strong> ${booking.show.showDateTime}</p>
+                        <p style="margin: 5px 0;"><strong>💺 Seats:</strong> ${booking.bookedSeats.join(', ')}</p>
+                        <p style="margin: 5px 0;"><strong>💰 Amount Paid:</strong> ₹${booking.amount}</p>
+                        <p style="margin: 5px 0;"><strong>🔖 Booking ID:</strong> ${bookingId}</p>
+                    </div>
+
+                    <p style="color: #555;">Please arrive 15 minutes before the show. Enjoy the movie! 🍿</p>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <p style="color: #aaa; font-size: 12px;">© 2026 CineMine. All rights reserved.</p>
+                    </div>
+                </div>
+
+            </div>`
+        })
+    }
+)
+
 // Create an empty array where we'll export future Inngest functions
-export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation, releaseSeatsAndDeleteBooking];
+export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation, releaseSeatsAndDeleteBooking, sendBookingConfirmationEmail];
