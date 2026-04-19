@@ -1,45 +1,69 @@
-import { request } from 'express';
 import stripe from 'stripe';
 import Booking from '../models/Booking.js';
 
 export const stripeWebhooks = async (req, res) => {
     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
-    const sig = request.headers["stripe-signature"];
+    const sig = req.headers["stripe-signature"];
 
     let event;
 
     try {
-        event = stripeInstance.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
+        // ✅ Vercel fix — body may not be a raw Buffer
+        const rawBody = req.body instanceof Buffer
+            ? req.body
+            : Buffer.from(JSON.stringify(req.body));
+
+        event = stripeInstance.webhooks.constructEvent(
+            rawBody,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+
     } catch (error) {
-        return response.status(400).send(`Webhook Error : ${error.message}`)
+        console.log("❌ constructEvent failed:", error.message);
+        return res.status(400).send(`Webhook Error: ${error.message}`);
     }
 
     try {
         switch (event.type) {
-            case "payment_intent.succeed": {
+            case "payment_intent.succeeded": {
                 const paymentIntent = event.data.object;
-                const sessionList = await stripeInstance.checkout.list({
-                    paymentIntent: paymentIntent.id
-                })
+
+                const sessionList = await stripeInstance.checkout.sessions.list({
+                    payment_intent: paymentIntent.id
+                });
 
                 const session = sessionList.data[0];
+
+                if (!session) {
+                    console.log("❌ No session found for payment intent:", paymentIntent.id);
+                    return res.status(400).send("No session found");
+                }
+
                 const { bookingId } = session.metadata;
 
-                await Booking.findByIdAndUpdate(bookingId, {
+                if (!bookingId) {
+                    console.log("❌ No bookingId in session metadata");
+                    return res.status(400).send("No bookingId in metadata");
+                }
+
+                const updated = await Booking.findByIdAndUpdate(bookingId, {
                     isPaid: true,
                     paymentLink: "",
-                })
+                }, { new: true });
 
+                console.log("✅ Booking updated:", updated);
                 break;
             }
-        
+
             default:
-                console.log('Unhandled event type : ', event.type);
+                console.log('Unhandled event type:', event.type);
         }
 
-        response.json({ received: true})
+        return res.json({ received: true });
+
     } catch (err) {
-        console.log("Webhook processing Error : ", err);
-        response.status(500).send("Internal Server Error");
+        console.log("❌ Webhook processing error:", err);
+        return res.status(500).send("Internal Server Error");
     }
-} 
+}

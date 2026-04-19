@@ -3,13 +3,13 @@ import Show from "../models/Show.js"
 import stripe from 'stripe';
 
 // Function to check the availability of selected seats for a movie
-const checkSeatsAvailability = async ( showId, selectedSeats ) => {
+const checkSeatsAvailability = async (showId, selectedSeats) => {
     try {
         const showData = await Show.findById(showId)
-        if(!showData) return false;
+        if (!showData) return false;
 
         const occupiedSeats = showData.occupiedSeats;
-        const isAnySeatTaken = selectedSeats.some( seat => occupiedSeats[seat])
+        const isAnySeatTaken = selectedSeats.some(seat => occupiedSeats[seat])
 
         return !isAnySeatTaken;
     } catch (error) {
@@ -26,8 +26,8 @@ export const createBooking = async (req, res) => {
 
         const isAvailable = await checkSeatsAvailability(showId, selectedSeats)
 
-        if(!isAvailable) {
-            return res.json({success: false, message: "Selected Seats are not available.."})
+        if (!isAvailable) {
+            return res.json({ success: false, message: "Selected Seats are not available.." })
         }
 
         const showData = await Show.findById(showId).populate('movie');
@@ -39,7 +39,7 @@ export const createBooking = async (req, res) => {
             bookedSeats: selectedSeats
         })
 
-        selectedSeats.map((seat)=> {
+        selectedSeats.map((seat) => {
             showData.occupiedSeats[seat] = userId;
         })
 
@@ -76,10 +76,13 @@ export const createBooking = async (req, res) => {
         booking.paymentLink = session.url
         await booking.save();
 
-        res.json({success: true, url: session.url})
+        res.json({ success: true, url: session.url })
+        console.log("🔥 Creating Stripe session");
+        console.log("Amount:", booking.amount);
+        console.log("Origin:", origin);
     } catch (error) {
         console.log(error.message);
-        res.json({success: false, message: error.message})
+        res.json({ success: false, message: error.message })
     }
 }
 
@@ -88,11 +91,11 @@ export const getOccupiedSeats = async (req, res) => {
         const { showId } = req.params;
         const showData = await Show.findById(showId);
 
-        const  occupiedSeats = Object.keys(showData.occupiedSeats)
+        const occupiedSeats = Object.keys(showData.occupiedSeats)
 
-        res.json({success: true, occupiedSeats})
+        res.json({ success: true, occupiedSeats })
     } catch (error) {
         console.log(error.message);
-        res.json({success: false, message: error.message})
+        res.json({ success: false, message: error.message })
     }
 }
