@@ -1,26 +1,23 @@
-import stripe from 'stripe';
+import Stripe from 'stripe';
 import Booking from '../models/Booking.js';
 
 export const stripeWebhooks = async (req, res) => {
-    const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
+    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
     const sig = req.headers["stripe-signature"];
 
     let event;
 
     try {
-        // ✅ Vercel fix — body may not be a raw Buffer
-        const rawBody = req.body instanceof Buffer
-            ? req.body
-            : Buffer.from(JSON.stringify(req.body));
-
+        // ✅ req.body must be raw Buffer — do NOT convert it
         event = stripeInstance.webhooks.constructEvent(
-            rawBody,
+            req.body,  
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
 
     } catch (error) {
         console.log("❌ constructEvent failed:", error.message);
+        console.log("Body type:", typeof req.body, Buffer.isBuffer(req.body)); // debug log
         return res.status(400).send(`Webhook Error: ${error.message}`);
     }
 
@@ -28,31 +25,19 @@ export const stripeWebhooks = async (req, res) => {
         switch (event.type) {
             case "payment_intent.succeeded": {
                 const paymentIntent = event.data.object;
-
                 const sessionList = await stripeInstance.checkout.sessions.list({
                     payment_intent: paymentIntent.id
                 });
 
                 const session = sessionList.data[0];
-
-                if (!session) {
-                    console.log("❌ No session found for payment intent:", paymentIntent.id);
-                    return res.status(400).send("No session found");
-                }
-
                 const { bookingId } = session.metadata;
 
-                if (!bookingId) {
-                    console.log("❌ No bookingId in session metadata");
-                    return res.status(400).send("No bookingId in metadata");
-                }
-
-                const updated = await Booking.findByIdAndUpdate(bookingId, {
+                await Booking.findByIdAndUpdate(bookingId, {
                     isPaid: true,
                     paymentLink: "",
                 }, { new: true });
 
-                console.log("✅ Booking updated:", updated);
+                console.log("✅ Booking updated successfully");
                 break;
             }
 
