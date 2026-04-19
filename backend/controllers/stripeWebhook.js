@@ -39,7 +39,7 @@ export const stripeWebhooks = async (req, res) => {
                 const booking = await Booking.findByIdAndUpdate(
                     bookingId,
                     { isPaid: true, paymentLink: "" },
-                    { new: true }
+                    { returnDocument: 'after' } 
                 );
 
                 // ✅ Lock seats only after payment confirmed
