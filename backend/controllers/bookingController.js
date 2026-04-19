@@ -2,7 +2,6 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js"
 import stripe from 'stripe';
 
-// Function to check the availability of selected seats for a movie
 const checkSeatsAvailability = async (showId, selectedSeats) => {
     try {
         const showData = await Show.findById(showId)
@@ -39,18 +38,11 @@ export const createBooking = async (req, res) => {
             bookedSeats: selectedSeats
         })
 
-        selectedSeats.map((seat) => {
-            showData.occupiedSeats[seat] = userId;
-        })
+        // ✅ REMOVED — seats are no longer locked here
+        // Seats will be locked in the webhook after payment is confirmed
 
-        showData.markModified('occupiedSeats');
-
-        await showData.save();
-
-        // Stripe Payment GateWay initialization
         const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
 
-        // Creating line items for stripe
         const line_items = [{
             price_data: {
                 currency: 'inr',
@@ -70,16 +62,13 @@ export const createBooking = async (req, res) => {
             metadata: {
                 bookingId: booking._id.toString()
             },
-            expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // Expires in 30 mins
+            expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         })
 
         booking.paymentLink = session.url
         await booking.save();
 
         res.json({ success: true, url: session.url })
-        console.log("🔥 Creating Stripe session");
-        console.log("Amount:", booking.amount);
-        console.log("Origin:", origin);
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message })

@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import Booking from '../models/Booking.js';
+import Show from '../models/Show.js';
 
 export const stripeWebhooks = async (req, res) => {
     const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -8,21 +9,19 @@ export const stripeWebhooks = async (req, res) => {
     let event;
 
     try {
-        // ✅ req.body must be raw Buffer — do NOT convert it
         event = stripeInstance.webhooks.constructEvent(
-            req.body,  
+            req.body,
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
-
     } catch (error) {
         console.log("❌ constructEvent failed:", error.message);
-        console.log("Body type:", typeof req.body, Buffer.isBuffer(req.body)); // debug log
         return res.status(400).send(`Webhook Error: ${error.message}`);
     }
 
     try {
         switch (event.type) {
+
             case "payment_intent.succeeded": {
                 const paymentIntent = event.data.object;
                 const sessionList = await stripeInstance.checkout.sessions.list({
@@ -30,14 +29,39 @@ export const stripeWebhooks = async (req, res) => {
                 });
 
                 const session = sessionList.data[0];
+                if (!session) break;
+
+                const { bookingId } = session.metadata;
+                if (!bookingId) break;
+
+                // ✅ Mark booking as paid
+                const booking = await Booking.findByIdAndUpdate(
+                    bookingId,
+                    { isPaid: true, paymentLink: "" },
+                    { new: true }
+                );
+
+                // ✅ Lock seats only after payment confirmed
+                const showData = await Show.findById(booking.show);
+                booking.bookedSeats.forEach((seat) => {
+                    showData.occupiedSeats[seat] = booking.user;
+                });
+                showData.markModified('occupiedSeats');
+                await showData.save();
+
+                console.log("✅ Payment confirmed, seats locked, booking updated");
+                break;
+            }
+
+            // ✅ Handle expired checkout sessions
+            case "checkout.session.expired": {
+                const session = event.data.object;
                 const { bookingId } = session.metadata;
 
-                await Booking.findByIdAndUpdate(bookingId, {
-                    isPaid: true,
-                    paymentLink: "",
-                }, { new: true });
-
-                console.log("✅ Booking updated successfully");
+                if (bookingId) {
+                    await Booking.findByIdAndDelete(bookingId);
+                    console.log("🗑️ Booking deleted — session expired");
+                }
                 break;
             }
 
