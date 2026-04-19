@@ -4,11 +4,13 @@ import stripe from 'stripe';
 
 const checkSeatsAvailability = async (showId, selectedSeats) => {
     try {
-        const showData = await Show.findById(showId)
-        if (!showData) return false;
+        const paidBookings = await Booking.find({ 
+            show: showId, 
+            isPaid: true 
+        });
 
-        const occupiedSeats = showData.occupiedSeats;
-        const isAnySeatTaken = selectedSeats.some(seat => occupiedSeats[seat])
+        const occupiedSeats = paidBookings.flatMap(booking => booking.bookedSeats);
+        const isAnySeatTaken = selectedSeats.some(seat => occupiedSeats.includes(seat));
 
         return !isAnySeatTaken;
     } catch (error) {
@@ -78,13 +80,18 @@ export const createBooking = async (req, res) => {
 export const getOccupiedSeats = async (req, res) => {
     try {
         const { showId } = req.params;
-        const showData = await Show.findById(showId);
 
-        const occupiedSeats = Object.keys(showData.occupiedSeats)
+        // ✅ Derive occupied seats from paid bookings only
+        const paidBookings = await Booking.find({ 
+            show: showId, 
+            isPaid: true 
+        });
 
-        res.json({ success: true, occupiedSeats })
+        const occupiedSeats = paidBookings.flatMap(booking => booking.bookedSeats);
+
+        res.json({ success: true, occupiedSeats });
     } catch (error) {
         console.log(error.message);
-        res.json({ success: false, message: error.message })
+        res.json({ success: false, message: error.message });
     }
 }

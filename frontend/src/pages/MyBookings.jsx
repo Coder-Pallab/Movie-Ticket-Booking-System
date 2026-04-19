@@ -43,6 +43,7 @@ const MyBookings = () => {
       <h1 className="text-xl font-semibold mb-4">My Bookings</h1>
 
       {bookings
+      .filter(item => item.show && item.show.movie) // ✅ skip null bookings
       .map((item, index)=> (
         <div key={index} className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-3xl">
           <div className="flex flex-col md:flex-row">
